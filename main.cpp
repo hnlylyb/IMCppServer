@@ -92,25 +92,35 @@ void* deal(void* arg)
                     Json::Reader reader;
                     Json::Value root;
                     string str(buf);
-                    if (!reader.parse(str,root))
+                    try
                     {
-                        cout << "parse failed! thread id:" << targ.thread_id << std::endl;
-                        continue;
+                        if (!reader.parse(str,root))
+                        {
+                            cout << "parse failed! thread id:" << targ.thread_id << std::endl;
+                            continue;
+                        }
+   
+
+                        int id = root["id"].asInt();
+                        string messages = root["message"].asString();
+                        if(send(g_Infos[id].fd,messages.c_str(),messages.length(),0) == -1)
+                        {
+                            if (errno == EWOULDBLOCK)
+                            {
+                                g_Infos[id].write_ready = false;
+                                g_BlockMessages[id].emplace_front(messages);
+                            }
+                            else
+                            {
+                                cout << "error in 107 send errno " << errno << "!" << endl;
+                            }
+                            
+                        }
                     }
-                    int id = root["id"].asInt();
-                    string messages = root["message"].asString();
-                    if(send(g_Infos[id].fd,messages.c_str(),messages.length(),0) == -1)
+                    catch(const std::exception& e)
                     {
-                        if (errno == EWOULDBLOCK)
-                        {
-                            g_Infos[id].write_ready = false;
-                            g_BlockMessages[id].emplace_front(messages);
-                        }
-                        else
-                        {
-                            cout << "error in 107 send errno " << errno << "!" << endl;
-                        }
-                        
+                        std::cerr << e.what() << '\n';
+                        continue;
                     }
                 }
             }
