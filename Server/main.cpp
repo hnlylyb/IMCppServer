@@ -112,9 +112,8 @@ void* deal(void* arg)
                             }
                             else
                             {
-                                cout << "error in 107 send errno " << errno << "!" << endl;
+                                cout << g_Infos[id].fd << " " << id << " error in 107 send errno " << errno << "!" << endl;
                             }
-                            
                         }
                     }
                     catch(const std::exception& e)
@@ -142,7 +141,7 @@ void* deal(void* arg)
                             }
                             else
                             {
-                                cout << "error in 131 send errno " << errno << "!" << endl;
+                                cout << g_Infos[id].fd << " " << id << "error in 131 send errno " << errno << "!" << endl;
                             }
                         }
                         else
@@ -159,12 +158,7 @@ void* deal(void* arg)
                 }
                 else
                 {
-                    cout << "user_id "<< g_mid << " login." << std::endl;
-                    g_Infos[g_mid].fd = events[i].data.fd;
-                    g_Infos[g_mid].user_id = g_mid;
-                    g_Infos[g_mid].write_ready = true;
-                    g_FdId[events[i].data.fd] = g_mid;
-                    g_mid++;
+                    ;
                 }
             }
         }
@@ -221,6 +215,16 @@ int main()
         }
         ev.events = EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLOUT;
         ev.data.fd = connfd;
+        cout << "user_id " << g_mid << " login." << std::endl;
+        g_Infos[g_mid].fd = connfd;
+        g_Infos[g_mid].user_id = g_mid;
+        g_Infos[g_mid].write_ready = true;
+        g_FdId[connfd] = g_mid;
+        g_mid++;
+        cout << "accept a new connection fd:" << connfd << endl;
+        string tmp;
+        tmp = "welcome!";
+        send (connfd,tmp.c_str(),tmp.length(),0);
         if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connfd, &ev) == -1) 
         {
             cout << "error epoll_ctl."<< errno << endl;
