@@ -1,6 +1,6 @@
 SHELL = /bin/bash
 CXX = g++
-SOURCES = main.cpp
+SOURCES = main.cpp Thread.cpp
 JSONCPP = ../jsoncpp
 
 IMcppServer : $(SOURCES)
@@ -8,4 +8,4 @@ IMcppServer : $(SOURCES)
 
 .PHONY : clean
 clean :
-	@rm IMcpp -f
+	@rm IMcppServer -f

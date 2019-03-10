@@ -4,12 +4,13 @@
 #include <arpa/inet.h>
 #include <iostream>
 #include <unistd.h>
-#include <pthread.h>
 #include <algorithm>
 #include <vector>
 #include <list>
 #include <unordered_map>
 #include <json/json.h>
+
+#include "Thread.h"
 
 using namespace std;
 
@@ -32,23 +33,7 @@ unordered_map<int,int> g_FdId;
 
 int g_mid = 1;
 
-class Thread
-{
-    pthread_t* m_thread;
-    void* (*routine)(void*);
-public:
-    Thread(void* (*a)(void*),void* arg)
-    {
-        routine = a;
-        m_thread = new pthread_t;
-        pthread_create(m_thread,nullptr,routine,arg);
-    }
-    ~Thread()
-    {
-        pthread_join(*m_thread,nullptr);
-        delete m_thread;
-    }
-};
+
 
 void* deal(void* arg)
 {
