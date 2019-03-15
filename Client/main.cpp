@@ -15,11 +15,12 @@
 using namespace std;
 
 int sock;
+bool run = true;
 void *reveiver(void *arg)
 {
     char buf[1024];
     memset(buf, 0, 1024);
-    while ()
+    while (run)
     {
         int n = recv(sock, buf, 1024, 0);
         if (n > 0)
@@ -60,7 +61,9 @@ int main()
         }
         input.clear();
     }
+    run = false;
     close(sock);
+    thread.Join();
 
     return 0;
 }

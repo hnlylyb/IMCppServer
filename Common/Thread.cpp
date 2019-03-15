@@ -12,3 +12,8 @@ Thread::~Thread()
     pthread_join(*m_thread, nullptr);
     delete m_thread;
 }
+
+void Thread::Join()
+{
+    pthread_join(*m_thread, nullptr);
+}
