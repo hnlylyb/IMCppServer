@@ -9,14 +9,13 @@
 #include <list>
 #include <unordered_map>
 #include <json/json.h>
-
-#include "Thread.h"
+#include <thread>
 
 using namespace std;
 
 int sock;
 bool run = true;
-void *reveiver(void *arg)
+void reveiver()
 {
     char buf[1024];
     memset(buf, 0, 1024);
@@ -27,7 +26,6 @@ void *reveiver(void *arg)
             cout << buf << endl;
         memset(buf, 0, n);
     }
-    return nullptr;
 }
 
 int main()
@@ -41,7 +39,7 @@ int main()
     addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK); //inet_addr("127.0.0.1");
     connect(sock, reinterpret_cast<sockaddr *>(&addr), sizeof(addr));
     string input;
-    Thread thread(reveiver,nullptr);
+    std::thread thr(reveiver);
     while (cin >> input)
     {
         Json::Value root;
@@ -56,14 +54,14 @@ int main()
             }
             else
             {
-                cout << "error in 36 send errno " << errno << "!" << endl;
+                cout << "error in send errno " << errno << "!" << endl;
             }
         }
         input.clear();
     }
     run = false;
     close(sock);
-    thread.Join();
+    thr.join();
 
     return 0;
 }

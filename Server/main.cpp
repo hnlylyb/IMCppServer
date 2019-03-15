@@ -9,8 +9,7 @@
 #include <list>
 #include <unordered_map>
 #include <json/json.h>
-
-#include "Thread.h"
+#include <thread>
 
 using namespace std;
 
@@ -27,48 +26,44 @@ struct UserInfo
     bool write_ready = false;
 };
 
-unordered_map<int,UserInfo> g_Infos;
-unordered_map<int,list<std::string> > g_BlockMessages;
-unordered_map<int,int> g_FdId;
+unordered_map<int, UserInfo> g_Infos;
+unordered_map<int, list<std::string>> g_BlockMessages;
+unordered_map<int, int> g_FdId;
 
 int g_mid = 1;
 
-
-
-void* deal(void* arg)
+void deal(int epoll_fd, int thread_id)
 {
-    ThreadArg& targ = *reinterpret_cast<ThreadArg*>(arg);
-    printf ("thread: %d created.\n",targ.thread_id);
-    int epollfd = targ.epoll_fd;
-    epoll_event events[128];
+    printf("thread: %d created.\n", thread_id);
+    epoll_event events[1024];
     char buf[1024];
-    while(true)
+    while (true)
     {
-        int nfds = epoll_wait(epollfd, events, 128, -1);
+        int nfds = epoll_wait(epoll_fd, events, 1024, -1);
         if (nfds == -1)
         {
             cout << "epoll_wait error." << std::endl;
         }
-        for (int i=0;i!=nfds;i++)
+        for (int i = 0; i != nfds; i++)
         {
-            printf ("thread: %d, event: %x\n",targ.thread_id,events[i].events);
+            printf("thread: %d, event: %x\n", thread_id, events[i].events);
             if ((events[i].events & EPOLLRDHUP) != 0)
             {
                 epoll_event ev;
                 ev = events[i];
-                epoll_ctl(epollfd,EPOLL_CTL_DEL,events[i].data.fd,&ev);
+                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, &ev);
                 cout << "disconnected by clinet." << std::endl;
             }
             else if ((events[i].events & EPOLLIN) != 0)
             {
-                cout << "EPOLLIN! thread id:" << targ.thread_id << std::endl;
-                int num = recv(events[i].data.fd,buf,1024,0);
+                cout << "EPOLLIN! thread id:" << thread_id << std::endl;
+                int num = recv(events[i].data.fd, buf, 1024, 0);
                 buf[num] = 0;
-                if (strcmp(buf,"bye\n") == 0 || strcmp(buf,"bye\r\n") == 0)
+                if (strcmp(buf, "bye\n") == 0 || strcmp(buf, "bye\r\n") == 0)
                 {
                     epoll_event ev;
                     ev = events[i];
-                    epoll_ctl(epollfd,EPOLL_CTL_DEL,events[i].data.fd,&ev);
+                    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, &ev);
                     close(events[i].data.fd);
                     break;
                 }
@@ -79,16 +74,15 @@ void* deal(void* arg)
                     string str(buf);
                     try
                     {
-                        if (!reader.parse(str,root))
+                        if (!reader.parse(str, root))
                         {
-                            cout << "parse failed! thread id:" << targ.thread_id << std::endl;
+                            cout << "parse failed! thread id:" << thread_id << std::endl;
                             continue;
                         }
-   
 
                         int id = root["id"].asInt();
                         string messages = root["message"].asString();
-                        if(send(g_Infos[id].fd,messages.c_str(),messages.length(),0) == -1)
+                        if (send(g_Infos[id].fd, messages.c_str(), messages.length(), 0) == -1)
                         {
                             if (errno == EWOULDBLOCK)
                             {
@@ -101,7 +95,7 @@ void* deal(void* arg)
                             }
                         }
                     }
-                    catch(const std::exception& e)
+                    catch (const std::exception &e)
                     {
                         std::cerr << e.what() << '\n';
                         continue;
@@ -117,29 +111,27 @@ void* deal(void* arg)
                     {
                         g_Infos[id].write_ready = true;
                         while (g_BlockMessages[id].begin() != g_BlockMessages[id].end())
-                        if(send(g_Infos[id].fd,g_BlockMessages[id].back().c_str(),g_BlockMessages[id].back().length(),0) == -1)
-                        {
-                            if (errno == EAGAIN || errno == EWOULDBLOCK)
+                            if (send(g_Infos[id].fd, g_BlockMessages[id].back().c_str(), g_BlockMessages[id].back().length(), 0) == -1)
                             {
-                                g_Infos[id].write_ready = false;
-                                break;
+                                if (errno == EAGAIN || errno == EWOULDBLOCK)
+                                {
+                                    g_Infos[id].write_ready = false;
+                                    break;
+                                }
+                                else
+                                {
+                                    cout << g_Infos[id].fd << " " << id << "error in 131 send errno " << errno << "!" << endl;
+                                }
                             }
                             else
                             {
-                                cout << g_Infos[id].fd << " " << id << "error in 131 send errno " << errno << "!" << endl;
+                                g_BlockMessages[id].pop_back();
                             }
-                        }
-                        else
-                        {
-                            g_BlockMessages[id].pop_back();
-                        }
-                        
                     }
                     else
                     {
                         cout << "error! g_BlockMessages.find(g_FdId[events[i].data.fd]) != g_BlockMessages.end() but g_Infos[g_FdId[events[i].data.fd]].write_ready != false" << endl;
                     }
-                    
                 }
                 else
                 {
@@ -148,54 +140,41 @@ void* deal(void* arg)
             }
         }
     }
-    return nullptr;
 }
-
 
 int main()
 {
-    int sock = socket(AF_INET,SOCK_STREAM,0);
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
     cout << "socket fd:" << sock << std::endl;
     sockaddr_in addr;
     memset(&addr, 0, sizeof(sockaddr_in));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(10004);
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);//inet_addr("0.0.0.0");
+    addr.sin_addr.s_addr = htonl(INADDR_ANY); //inet_addr("0.0.0.0");
     epoll_event ev;
     int epoll_fd = epoll_create1(0);
-    
-    ThreadArg arg[8];
-    for (int i = 0;i!= 8;i++)
-    {
-        arg[i].epoll_fd = epoll_fd;
-        arg[i].thread_id = i;
-        if (arg[i].epoll_fd == -1)
-        {
-            cout << "create epoll failed." << errno << endl;
-            return 1;
-        }
-    }
-    
-    if (bind(sock,reinterpret_cast<sockaddr*>(&addr),sizeof(sockaddr)) != 0)
+
+    if (bind(sock, reinterpret_cast<sockaddr *>(&addr), sizeof(sockaddr)) != 0)
     {
         cout << "error bind." << errno << endl;
         return 1;
     }
-    if (listen(sock,10240) != 0)
+    if (listen(sock, 10240) != 0)
     {
-        cout << "error listen."<< errno << endl;
+        cout << "error listen." << errno << endl;
     }
     int connfd;
-    Thread *threads[8];
-    for (int i = 0;i!= 8;i++)
+    thread *threads[8];
+
+    for (int i = 0; i != 8; i++)
     {
-        threads[i] = new Thread(deal,&arg[i].epoll_fd);
+        threads[i] = new thread(deal, epoll_fd, i);
     }
-    while(true)
+    while (true)
     {
-        if((connfd = accept(sock,(struct sockaddr*)NULL,NULL)) == -1)
+        if ((connfd = accept(sock, (struct sockaddr *)NULL, NULL)) == -1)
         {
-            printf("accpet socket error: %s errno :%d\n",strerror(errno),errno);
+            printf("accpet socket error: %s errno :%d\n", strerror(errno), errno);
             continue;
         }
         ev.events = EPOLLIN | EPOLLET | EPOLLRDHUP | EPOLLOUT;
@@ -209,11 +188,11 @@ int main()
         cout << "accept a new connection fd:" << connfd << endl;
         string tmp;
         tmp = "welcome!";
-        send (connfd,tmp.c_str(),tmp.length(),0);
-        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connfd, &ev) == -1) 
+        send(connfd, tmp.c_str(), tmp.length(), 0);
+        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connfd, &ev) == -1)
         {
-            cout << "error epoll_ctl."<< errno << endl;
-        }       
+            cout << "error epoll_ctl." << errno << endl;
+        }
     }
     close(sock);
     return 0;

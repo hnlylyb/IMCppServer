@@ -1,10 +1,10 @@
 SHELL = /bin/bash
 CXX = g++
-SOURCES = main.cpp ../Common/Thread.cpp
+SOURCES = main.cpp
 JSONCPP = ../jsoncpp
 
 IMcppServer : $(SOURCES)
-	@$(CXX) $(SOURCES) -I$(JSONCPP)/include -I../Common -lpthread -L$(JSONCPP)/lib -ljsoncpp -o IMcppServer
+	@$(CXX) $(SOURCES) -I$(JSONCPP)/include -I../Common -L$(JSONCPP)/lib -lpthread -ljsoncpp -o IMcppServer
 
 .PHONY : clean
 clean :
