@@ -19,8 +19,9 @@ void *reveiver(void *arg)
 {
     char buf[1024];
     memset(buf, 0, 1024);
-    while (int n = recv(sock, buf, 1024, 0))
+    while ()
     {
+        int n = recv(sock, buf, 1024, 0);
         if (n > 0)
             cout << buf << endl;
         memset(buf, 0, n);
@@ -59,6 +60,7 @@ int main()
         }
         input.clear();
     }
+    close(sock);
 
     return 0;
 }
