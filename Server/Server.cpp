@@ -7,17 +7,54 @@
 
 #include "Server.h"
 
-Server::Server(int threadnums)
+Server::Server(int thread_num, int listen_addr, int listen_port, int max_connection_num)
 {
+    m_thread_num = thread_num;
+    m_listen_addr = listen_addr;
+    m_listen_port = listen_port;
+    max_connection_num = max_connection_num;
     m_sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    cout << "socket fd:" << m_sockfd << std::endl;
+    
+    if (m_sockfd != -1)
+    {
+        cout << "socket fd:" << m_sockfd << std::endl;
+    }
+    else
+    {
+        throw;
+    }
+
+    m_epoll_fd = epoll_create1(0);
+    if (m_epoll_fd != -1)
+    {
+        ;
+    }
+    else
+    {
+        throw;
+    }
+
+    m_mid = 1;
+}
+
+Server::~Server()
+{
+    for (auto t : m_threads)
+    {
+        t->join();
+        delete t;
+    }
+    close(m_sockfd);
+}
+
+void Server::Init()
+{
+
     sockaddr_in addr;
     memset(&addr, 0, sizeof(sockaddr_in));
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(10004);
-    addr.sin_addr.s_addr = htonl(INADDR_ANY); //inet_addr("0.0.0.0");
-    m_epoll_fd = epoll_create1(0);
-    m_mid = 1;
+    addr.sin_port = htons(m_listen_port);
+    addr.sin_addr.s_addr = htonl(m_listen_addr); //inet_addr("0.0.0.0");
 
     if (bind(m_sockfd, reinterpret_cast<sockaddr *>(&addr), sizeof(sockaddr)) != 0)
     {
@@ -30,18 +67,10 @@ Server::Server(int threadnums)
     }
     int connfd;
 
-    for (int i = 0; i != threadnums; i++)
+    for (int i = 0; i != m_thread_num; i++)
     {
         m_threads.emplace_back(new thread(&Server::Deal, this, i));
     }
-}
-
-Server::~Server()
-{
-    for (auto i : m_threads)
-    {
-    }
-    close(m_sockfd);
 }
 
 void Server::Deal(int thread_id)
@@ -73,7 +102,7 @@ void Server::Deal(int thread_id)
                 buf[num] = 0;
                 if (strcmp(buf, "bye\n") == 0 || strcmp(buf, "bye\r\n") == 0)
                 {
-                    epoll_event& ev = events[i];
+                    epoll_event &ev = events[i];
                     epoll_ctl(m_epoll_fd, EPOLL_CTL_DEL, events[i].data.fd, &ev);
                     close(events[i].data.fd);
                     break;

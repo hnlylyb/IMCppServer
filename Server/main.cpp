@@ -4,7 +4,8 @@ using namespace std;
 
 int main()
 {
-    Server server(8);
+    Server server;
+    server.Init();
     server.Accept();
     return 0;
 }

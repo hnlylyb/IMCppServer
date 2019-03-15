@@ -18,14 +18,22 @@ class Server
   int m_mid;
   int m_sockfd;
   int m_epoll_fd;
-  vector<thread*> m_threads;
+  int m_thread_num;
+  int m_listen_addr;
+  int m_listen_port;
+  int m_max_connection_num;
+  vector<thread *> m_threads;
   unordered_map<int, UserInfo> m_Infos;
   unordered_map<int, list<string>> m_BlockMessages;
   unordered_map<int, int> m_FdId;
 
 public:
-  Server(int threadnums);
+  Server(int thread_num = 8, int listen_addr = 0, int listen_port = 10004, int max_connection_num = 10240);
   ~Server();
   void Accept();
+
+  void Init();
+
+protected:
   void Deal(int thread_id);
 };
