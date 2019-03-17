@@ -1,10 +1,10 @@
-#include "Server.h"
+#include "IMServer.h"
 
 using namespace std;
 
 int main()
 {
-    Server server;
+    IMServer server;
     server.Init();
     server.Accept();
     return 0;
