@@ -155,8 +155,12 @@ void Server::HandleEventRDHUP(epoll_event &event)
 
 void Server::HandleEventIN(epoll_event &event)
 {
+    char buf[1024];
+    int n = recv(event.data.fd,buf,1024,0);
+    send(event.data.fd,buf,n,0);
 }
 
 void Server::HandleEventOUT(epoll_event &event)
 {
+    cout << "buffer ready" << endl;
 }

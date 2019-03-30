@@ -18,7 +18,6 @@ IMServer::~IMServer()
 
 void IMServer::HandleAccept(int connfd)
 {
-
     cout << "user_id " << m_mid << " login." << std::endl;
     m_Infos[m_mid].fd = connfd;
     m_Infos[m_mid].user_id = m_mid;
@@ -72,7 +71,7 @@ void IMServer::HandleEventIN(epoll_event &event)
                 }
                 else
                 {
-                    cout << m_Infos[id].fd << " " << id << " error in 107 send errno " << errno << "!" << endl;
+                    cout << m_Infos[id].fd << " " << id << " error in " << __LINE__ << "send errno " << errno << "!" << endl;
                 }
             }
         }
@@ -102,7 +101,7 @@ void IMServer::HandleEventOUT(epoll_event &event)
                     }
                     else
                     {
-                        cout << m_Infos[id].fd << " " << id << "error in 131 send errno " << errno << "!" << endl;
+                        cout << m_Infos[id].fd << " " << id << "error in " << __LINE__ << "send errno " << errno << "!" << endl;
                     }
                 }
                 else

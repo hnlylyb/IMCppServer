@@ -4,7 +4,7 @@ using namespace std;
 
 int main()
 {
-    IMServer server;
+    Server server;
     server.Init();
     server.Accept();
     return 0;
