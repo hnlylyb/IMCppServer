@@ -5,6 +5,8 @@
 #include <vector>
 #include <sys/epoll.h>
 
+#include "BasicController.h"
+
 using namespace std;
 
 class Server
@@ -17,17 +19,9 @@ public:
 
 protected:
   int m_sockfd;
-  int m_epoll_fd;
-  int m_thread_num;
   int m_listen_addr;
   int m_listen_port;
   int m_max_connection_num;
-  vector<thread *> m_threads;
+  BasicController* m_ctrler;
   
-  void Deal(int thread_id);
-  virtual void HandleEvent(epoll_event &event);
-  virtual void HandleAccept(int connfd);
-  virtual void HandleEventRDHUP(epoll_event &event);
-  virtual void HandleEventIN(epoll_event &event);
-  virtual void HandleEventOUT(epoll_event &event);
 };
