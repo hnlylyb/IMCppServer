@@ -5,17 +5,17 @@
 #include <vector>
 #include <sys/epoll.h>
 
-#include "BasicController.h"
-
 using namespace std;
+
+class BasicController;
 
 class Server
 {
 public:
-  Server(int thread_num = 8, int listen_addr = 0, int listen_port = 10004, int max_connection_num = 10240);
+  Server(BasicController *ctrler, int listen_addr = 0, int listen_port = 10004, int max_connection_num = 10240);
   virtual ~Server();
-  void Accept();
-  void Init();
+  virtual void Accept();
+  virtual void Init();
 
 protected:
   int m_sockfd;

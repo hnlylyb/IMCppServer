@@ -1,6 +1,6 @@
 SHELL = /bin/bash
 CXX = g++
-SOURCES = main.cpp Server.cpp IMServer.cpp BasicController.cpp
+SOURCES = main.cpp Server.cpp BasicController.cpp IMController.cpp
 JSONCPP = ../jsoncpp
 
 IMcppServer : $(SOURCES)

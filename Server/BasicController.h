@@ -14,7 +14,7 @@ class BasicController
 public:
   BasicController(int thread_num = 8);
   virtual ~BasicController();
-  void AddSocketfd(int fd);
+  virtual void AddSocketfd(int fd);
 
 protected:
   int m_epoll_fd;

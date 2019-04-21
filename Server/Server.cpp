@@ -6,8 +6,9 @@
 #include <netinet/tcp.h>
 
 #include "Server.h"
+#include "BasicController.h"
 
-Server::Server(int thread_num, int listen_addr, int listen_port, int max_connection_num)
+Server::Server(BasicController *ctrler, int listen_addr, int listen_port, int max_connection_num)
 {
     m_listen_addr = listen_addr;
     m_listen_port = listen_port;
@@ -23,7 +24,14 @@ Server::Server(int thread_num, int listen_addr, int listen_port, int max_connect
         throw;
     }
 
-    m_ctrler = new BasicController();
+    if (ctrler != nullptr)
+    {
+        m_ctrler = ctrler;
+    }
+    else
+    {
+       m_ctrler = new BasicController();
+    }
 }
 
 Server::~Server()
@@ -43,7 +51,6 @@ void Server::Init()
     int keep_alive = 1;
     setsockopt(m_sockfd, SOL_SOCKET, SO_KEEPALIVE, (void *)&keep_alive, sizeof(keep_alive));
 
-
     if (bind(m_sockfd, reinterpret_cast<sockaddr *>(&addr), sizeof(sockaddr)) != 0)
     {
         cout << "error bind." << errno << endl;
@@ -55,7 +62,6 @@ void Server::Init()
     }
     int connfd;
 }
-
 
 void Server::Accept()
 {

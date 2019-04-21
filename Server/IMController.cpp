@@ -1,42 +1,25 @@
+#include <json/json.h>
 #include <iostream>
 #include <sys/socket.h>
-#include <json/json.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "IMServer.h"
+#include "IMController.h"
 
-using namespace std;
-IMServer::IMServer() : Server()
+IMController::IMController(int threadnum) : BasicController(threadnum)
 {
     m_mid = 1;
 }
 
-IMServer::~IMServer()
-{
-}
+IMController::~IMController() {}
 
-void IMServer::HandleAccept(int connfd)
-{
-    cout << "user_id " << m_mid << " login." << std::endl;
-    m_Infos[m_mid].fd = connfd;
-    m_Infos[m_mid].user_id = m_mid;
-    m_Infos[m_mid].write_ready = true;
-    m_FdId[connfd] = m_mid;
-    m_mid++;
-    cout << "accept a new connection fd:" << connfd << endl;
-    string tmp;
-    tmp = "welcome!";
-    send(connfd, tmp.c_str(), tmp.length(), 0);
-}
-
-void IMServer::HandleEventRDHUP(epoll_event &event)
+void IMController::HandleEventRDHUP(epoll_event &event)
 {
     m_Infos.erase(m_FdId[event.data.fd]);
     m_FdId.erase(event.data.fd);
 }
 
-void IMServer::HandleEventIN(epoll_event &event)
+void IMController::HandleEventIN(epoll_event &event)
 {
     char buf[1024];
     int num = recv(event.data.fd, buf, 1024, 0);
@@ -83,7 +66,7 @@ void IMServer::HandleEventIN(epoll_event &event)
     }
 }
 
-void IMServer::HandleEventOUT(epoll_event &event)
+void IMController::HandleEventOUT(epoll_event &event)
 {
     if (m_BlockMessages.find(m_FdId[event.data.fd]) != m_BlockMessages.end())
     {
@@ -118,4 +101,19 @@ void IMServer::HandleEventOUT(epoll_event &event)
     {
         ;
     }
+}
+
+void IMController::AddSocketfd(int fd)
+{
+    BasicController::AddSocketfd(fd);
+    cout << "user_id " << m_mid << " login." << std::endl;
+    m_Infos[m_mid].fd = fd;
+    m_Infos[m_mid].user_id = m_mid;
+    m_Infos[m_mid].write_ready = true;
+    m_FdId[fd] = m_mid;
+    m_mid++;
+    cout << "accept a new connection fd:" << fd << endl;
+    string tmp;
+    tmp = "welcome!";
+    send(fd, tmp.c_str(), tmp.length(), 0);
 }

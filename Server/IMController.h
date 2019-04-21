@@ -1,4 +1,4 @@
-#include "Server.h"
+#include "BasicController.h"
 
 struct UserInfo
 {
@@ -7,7 +7,7 @@ struct UserInfo
     bool write_ready = false;
 };
 
-class IMServer : public Server
+class IMController : public BasicController
 {
     int m_mid;
     unordered_map<int, UserInfo> m_Infos;
@@ -15,11 +15,11 @@ class IMServer : public Server
     unordered_map<int, int> m_FdId;
 
   public:
-    IMServer();
-    ~IMServer();
+    IMController(int thread_num = 8);
+    virtual ~IMController();
+    virtual void AddSocketfd(int fd);
 
   protected:
-    virtual void HandleAccept(int connfd);
     virtual void HandleEventRDHUP(epoll_event &event);
     virtual void HandleEventIN(epoll_event &event);
     virtual void HandleEventOUT(epoll_event &event);
